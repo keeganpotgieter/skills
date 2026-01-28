@@ -11,6 +11,15 @@ import { runFind } from './find.ts';
 import { runList } from './list.ts';
 import { track } from './telemetry.ts';
 
+export function formatSkippedMessage(skippedSkills: string[]): string | null {
+  if (skippedSkills.length === 0) return null;
+  const lines = [`Skipped ${skippedSkills.length} (reinstall needed):`];
+  for (const skill of skippedSkills) {
+    lines.push(`  - ${skill}`);
+  }
+  return lines.join('\n');
+}
+
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 function getVersion(): string {
@@ -481,14 +490,14 @@ async function runCheck(args: string[] = []): Promise<void> {
     skills: [],
   };
 
-  let skippedCount = 0;
+  const skippedSkills: string[] = [];
   for (const skillName of skillNames) {
     const entry = lock.skills[skillName];
     if (!entry) continue;
 
     // Skip skills without skillFolderHash (shouldn't happen with v3)
     if (!entry.skillFolderHash) {
-      skippedCount++;
+      skippedSkills.push(skillName);
       continue;
     }
 
@@ -500,8 +509,9 @@ async function runCheck(args: string[] = []): Promise<void> {
     });
   }
 
-  if (skippedCount > 0) {
-    console.log(`${DIM}Skipped ${skippedCount} (reinstall needed)${RESET}`);
+  const skippedMsg = formatSkippedMessage(skippedSkills);
+  if (skippedMsg) {
+    console.log(`${DIM}${skippedMsg}${RESET}`);
   }
 
   if (checkRequest.skills.length === 0) {
@@ -581,14 +591,14 @@ async function runUpdate(): Promise<void> {
     skills: [],
   };
 
-  let skippedCount = 0;
+  const skippedSkills: string[] = [];
   for (const skillName of skillNames) {
     const entry = lock.skills[skillName];
     if (!entry) continue;
 
     // Skip skills without skillFolderHash (shouldn't happen with v3)
     if (!entry.skillFolderHash) {
-      skippedCount++;
+      skippedSkills.push(skillName);
       continue;
     }
 
@@ -600,8 +610,9 @@ async function runUpdate(): Promise<void> {
     });
   }
 
-  if (skippedCount > 0) {
-    console.log(`${DIM}Skipped ${skippedCount} (reinstall needed)${RESET}`);
+  const skippedMsg = formatSkippedMessage(skippedSkills);
+  if (skippedMsg) {
+    console.log(`${DIM}${skippedMsg}${RESET}`);
   }
 
   if (checkRequest.skills.length === 0) {
